@@ -1,0 +1,51 @@
+<?php
+use Illuminate\Support\Facades\Route;
+use App\Enums\UserRole;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventParticipantsController;
+use App\Http\Controllers\Student\{EventBrowseController,RegistrationController};
+use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\SuperAdmin\UserManagementController;
+Route::redirect('/', '/dashboard');
+Route::middleware('auth')->group(function(){
+ Route::get('/dashboard',function(){return match(auth()->user()->role){UserRole::SuperAdmin=>app(UserManagementController::class)->dashboard(),UserRole::Admin=>app(MonitoringController::class)->dashboard(),default=>app(EventBrowseController::class)->index(request())};})->name('dashboard');
+ Route::get('/jelajah', [EventBrowseController::class,'index'])->name('browse');
+ Route::get('/jelajah/{event}',[EventBrowseController::class,'show'])->name('browse.show');
+ Route::post('/jelajah/{event}/daftar',[RegistrationController::class,'store'])->name('register.event');
+ Route::get('/riwayat',[RegistrationController::class,'index'])->name('history');
+ Route::get('/progres',[RegistrationController::class,'progress'])->name('progress');
+ Route::post('/pendaftaran/{registration}/batal',[RegistrationController::class,'cancel'])->name('register.cancel');
+ Route::post('/pendaftaran/{registration}/bukti',[RegistrationController::class,'evidence'])->name('evidence.upload');
+ Route::get('/bukti/{verification}',[RegistrationController::class,'download'])->name('evidence.download');
+ Route::get('/kelola-event',[EventController::class,'index'])->name('events.index');
+ Route::get('/kelola-event/buat',[EventController::class,'create'])->name('events.create');
+ Route::post('/kelola-event',[EventController::class,'store'])->name('events.store');
+ Route::get('/kelola-event/{event}/edit',[EventController::class,'edit'])->name('events.edit');
+ Route::put('/kelola-event/{event}',[EventController::class,'update'])->name('events.update');
+ Route::post('/kelola-event/{event}/batal',[EventController::class,'cancel'])->name('events.cancel');
+ Route::get('/kelola-event/{event}/peserta',[EventParticipantsController::class,'index'])->name('events.participants');
+ Route::post('/pendaftaran/{registration}/keputusan',[EventParticipantsController::class,'registration'])->name('registrations.decide');
+ Route::post('/verifikasi/{verification}/keputusan',[EventParticipantsController::class,'verification'])->name('verifications.decide');
+ Route::prefix('master')->name('master.')->group(function(){
+  Route::get('/users',[UserManagementController::class,'index'])->name('users.index');
+  Route::get('/users/create',[UserManagementController::class,'create'])->name('users.create');
+  Route::post('/users',[UserManagementController::class,'store'])->name('users.store');
+  Route::get('/users/{user}/edit',[UserManagementController::class,'edit'])->name('users.edit');
+  Route::put('/users/{user}',[UserManagementController::class,'update'])->name('users.update');
+  Route::patch('/users/{user}/status',[UserManagementController::class,'status'])->name('users.status');
+  Route::patch('/users/{user}/password',[UserManagementController::class,'password'])->name('users.password');
+ });
+ Route::prefix('admin')->name('admin.')->group(function(){
+  Route::get('/pending',[MonitoringController::class,'pending'])->name('pending');
+  Route::get('/mahasiswa',[MonitoringController::class,'students'])->name('students');
+  Route::post('/mahasiswa/import',[MonitoringController::class,'import'])->name('students.import');
+  Route::get('/akses',[MonitoringController::class,'access'])->name('access');
+  Route::post('/akses',[MonitoringController::class,'grant'])->name('access.grant');
+  Route::post('/akses/{access}/cabut',[MonitoringController::class,'revoke'])->name('access.revoke');
+  Route::get('/kategori',[MonitoringController::class,'categories'])->name('categories');
+  Route::post('/kategori',[MonitoringController::class,'saveCategory'])->name('categories.store');
+  Route::put('/kategori/{category}',[MonitoringController::class,'updateCategory'])->name('categories.update');
+  Route::delete('/kategori/{category}',[MonitoringController::class,'deleteCategory'])->name('categories.delete');
+ });
+});
+require __DIR__.'/auth.php';
